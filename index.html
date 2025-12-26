@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMA Negeri 1 Lahat</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .section { 
+            display: none; 
+            animation: fadeIn 0.5s ease-in;
+        }
+        .section.active { display: block; }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes slideDown {
+            from { opacity: 0; max-height: 0; }
+            to { opacity: 1; max-height: 500px; }
+        }
+        
+        .mobile-menu-enter {
+            animation: slideDown 0.3s ease-out;
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        .hover-scale {
+            transition: transform 0.3s ease;
+        }
+        
+        .hover-scale:hover {
+            transform: scale(1.05);
+        }
+        
+        .notification {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            padding: 16px 24px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            display: none;
+            z-index: 1000;
+            animation: slideInRight 0.3s ease-out;
+        }
+        
+        @keyframes slideInRight {
+            from { transform: translateX(400px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        .notification.show {
+            display: block;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal.show {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: white;
+            padding: 32px;
+            border-radius: 16px;
+            max-width: 500px;
+            width: 90%;
+            animation: scaleIn 0.3s ease-out;
+        }
+        
+        @keyframes scaleIn {
+            from { transform: scale(0.8); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Notification -->
+    <div id="notification" class="notification">
+        <div class="flex items-center gap-3">
+            <span id="notifIcon" class="text-2xl"></span>
+            <div>
+                <p id="notifTitle" class="font-bold"></p>
+                <p id="notifMessage" class="text-sm text-gray-600"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Pendaftaran -->
+    <div id="modalDaftar" class="modal">
+        <div class="modal-content">
+            <h2 class="text-2xl font-bold mb-4">Pendaftaran Siswa Baru</h2>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium mb-1">Nama Lengkap</label>
+                    <input type="text" id="daftarNama" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">Email</label>
+                    <input type="email" id="daftarEmail" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">Nomor Telepon</label>
+                    <input type="tel" id="daftarTelepon" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">Asal Sekolah</label>
+                    <input type="text" id="daftarSekolah" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                </div>
+                <div class="flex gap-3 pt-4">
+                    <button onclick="submitPendaftaran()" class="flex-1 bg-blue-600 text-white py-2 rounded-lg font-semibold hover:bg-blue-700 transition">
+                        Daftar
+                    </button>
+                    <button onclick="closeModal('modalDaftar')" class="flex-1 bg-gray-200 text-gray-700 py-2 rounded-lg font-semibold hover:bg-gray-300 transition">
+                        Batal
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Daftar Siswa -->
+    <div id="modalSiswa" class="modal">
+        <div class="modal-content" style="max-width: 900px; max-height: 80vh; overflow-y: auto;">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold">Daftar Siswa SMA Negeri 1 Lahat</h2>
+                <button onclick="closeModal('modalSiswa')" class="text-2xl text-gray-500 hover:text-gray-700">&times;</button>
+            </div>
+            <div class="mb-4">
+                <input type="text" id="searchSiswa" onkeyup="filterSiswa()" placeholder="Cari nama siswa..." class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div id="daftarSiswaContainer" class="grid md:grid-cols-2 gap-4">
+                <!-- Siswa akan dimuat di sini -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Detail Prestasi -->
+    <div id="modalPrestasiDetail" class="modal">
+        <div class="modal-content" style="max-width: 900px; max-height: 80vh; overflow-y: auto;">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold">Siswa Berprestasi</h2>
+                <button onclick="closeModal('modalPrestasiDetail')" class="text-2xl text-gray-500 hover:text-gray-700">&times;</button>
+            </div>
+            <div id="daftarPrestasiContainer" class="space-y-4">
+                <!-- Prestasi akan dimuat di sini -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <header class="bg-white shadow-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3 cursor-pointer" onclick="changeSection('beranda')">
+                    <div class="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center text-white text-2xl font-bold">
+                        📚
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-bold text-gray-800">SMA Negeri 1 Lahat</h1>
+                        <p class="text-xs text-gray-600">Unggul dalam Prestasi</p>
+                    </div>
+                </div>
+
+                <!-- Desktop Menu -->
+                <nav class="hidden md:flex gap-1" id="desktopMenu"></nav>
+
+                <!-- Mobile Menu Button -->
+                <button class="md:hidden text-2xl hover:bg-gray-100 p-2 rounded-lg transition" onclick="toggleMobileMenu()">☰</button>
+            </div>
+
+            <!-- Mobile Menu -->
+            <nav class="md:hidden mt-4 space-y-2 hidden" id="mobileMenu"></nav>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 py-8">
+        <!-- Beranda -->
+        <div id="beranda" class="section active">
+            <div class="bg-gradient-to-r from-blue-600 to-blue-800 text-white rounded-2xl p-8 md:p-12 mb-8">
+                <h1 class="text-4xl md:text-5xl font-bold mb-4">SMA Negeri 1 Lahat</h1>
+                <p class="text-xl md:text-2xl mb-6">Unggul dalam Prestasi, Berkarakter Mulia</p>
+                <button onclick="openModal('modalDaftar')" class="bg-white text-blue-600 px-6 py-3 rounded-lg font-semibold hover:bg-gray-100 transition hover-scale">
+                    Daftar Sekarang
+                </button>
+            </div>
+
+            <div class="grid md:grid-cols-3 gap-6 mb-8">
+                <div onclick="openModal('modalSiswa')" class="bg-white p-6 rounded-xl shadow-md border border-gray-100 hover-scale cursor-pointer">
+                    <div class="bg-blue-100 w-12 h-12 rounded-lg flex items-center justify-center mb-4 text-2xl">👥</div>
+                    <h3 class="text-xl font-bold mb-2">1.200+ Siswa</h3>
+                    <p class="text-gray-600">Siswa aktif yang berprestasi</p>
+                </div>
+                <div onclick="openModal('modalPrestasiDetail')" class="bg-white p-6 rounded-xl shadow-md border border-gray-100 hover-scale cursor-pointer">
+                    <div class="bg-green-100 w-12 h-12 rounded-lg flex items-center justify-center mb-4 text-2xl">🏆</div>
+                    <h3 class="text-xl font-bold mb-2">50+ Prestasi</h3>
+                    <p class="text-gray-600">Penghargaan tingkat nasional</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-md border border-gray-100 hover-scale cursor-pointer">
+                    <div class="bg-purple-100 w-12 h-12 rounded-lg flex items-center justify-center mb-4 text-2xl">📖</div>
+                    <h3 class="text-xl font-bold mb-2">Akreditasi A</h3>
+                    <p class="text-gray-600">Standar pendidikan terbaik</p>
+                </div>
+            </div>
+
+            <div class="bg-white p-8 rounded-xl shadow-md">
+                <h2 class="text-2xl font-bold mb-4">Sambutan Kepala Sekolah</h2>
+                <div class="flex items-start gap-4">
+                    <div class="w-24 h-24 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex-shrink-0 flex items-center justify-center text-white text-3xl font-bold">AH</div>
+                    <div>
+                        <p class="text-gray-700 leading-relaxed mb-3">
+                            Selamat datang di website SMA Negeri 1 Lahat. Kami berkomitmen untuk memberikan pendidikan berkualitas yang tidak hanya fokus pada prestasi akademik, tetapi juga pembentukan karakter dan pengembangan potensi setiap siswa.
+                        </p>
+                        <p class="font-semibold">Drs. Ahmad Hidayat, M.Pd</p>
+                        <p class="text-gray-600 text-sm">Kepala Sekolah</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Profil -->
+        <div id="profil" class="section">
+            <div class="bg-white p-8 rounded-xl shadow-md">
+                <h2 class="text-3xl font-bold mb-6">Profil Sekolah</h2>
+                
+                <div class="space-y-4 mb-8">
+                    <div>
+                        <h3 class="font-semibold text-lg mb-2">Visi</h3>
+                        <p class="text-gray-700 bg-blue-50 p-4 rounded-lg">
+                            Mewujudkan generasi yang unggul dalam prestasi, berkarakter mulia, dan berwawasan global pada tahun 2030
+                        </p>
+                    </div>
+                    
+                    <div>
+                        <h3 class="font-semibold text-lg mb-2">Misi</h3>
+                        <ul class="space-y-2 text-gray-700">
+                            <li class="flex gap-2">➤ Menyelenggarakan pendidikan berkualitas berbasis kurikulum nasional</li>
+                            <li class="flex gap-2">➤ Mengembangkan potensi siswa melalui kegiatan intrakurikuler dan ekstrakurikuler</li>
+                            <li class="flex gap-2">➤ Menumbuhkan karakter religius, nasionalis, dan mandiri</li>
+                            <li class="flex gap-2">➤ Memanfaatkan teknologi dalam proses pembelajaran</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div class="bg-gray-50 p-6 rounded-lg">
+                        <h3 class="font-semibold text-lg mb-3">Informasi Sekolah</h3>
+                        <div class="space-y-2 text-sm">
+                            <p><span class="font-medium">NPSN:</span> 10504123</p>
+                            <p><span class="font-medium">Status:</span> Negeri</p>
+                            <p><span class="font-medium">Akreditasi:</span> A</p>
+                            <p><span class="font-medium">Kurikulum:</span> Kurikulum Merdeka</p>
+                            <p><span class="font-medium">Tahun Berdiri:</span> 1985</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-50 p-6 rounded-lg">
+                        <h3 class="font-semibold text-lg mb-3">Fasilitas</h3>
+                        <div class="grid grid-cols-2 gap-2 text-sm">
+                            <div>✓ Lab Komputer</div>
+                            <div>✓ Lab IPA</div>
+                            <div>✓ Perpustakaan</div>
+                            <div>✓ Aula</div>
+                            <div>✓ Lapangan Olahraga</div>
+                            <div>✓ Masjid</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Program -->
+        <div id="program" class="section">
+            <h2 class="text-3xl font-bold mb-6">Program Unggulan</h2>
+            <div class="grid md:grid-cols-2 gap-6 mb-8">
+                <div class="bg-white p-6 rounded-xl shadow-md border border-gray-100 hover:shadow-lg transition cursor-pointer hover-scale">
+                    <h3 class="text-xl font-bold mb-2">Kurikulum Merdeka</h3>
+                    <p class="text-gray-600">Pembelajaran berbasis kompetensi dan karakter</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-md border border-gray-100 hover:shadow-lg transition cursor-pointer hover-scale">
+                    <h3 class="text-xl font-bold mb-2">Ekstrakurikuler</h3>
+                    <p class="text-gray-600">Pengembangan bakat dan minat siswa</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-md border border-gray-100 hover:shadow-lg transition cursor-pointer hover-scale">
+                    <h3 class="text-xl font-bold mb-2">Program Digital</h3>
+                    <p class="text-gray-600">Pembelajaran berbasis teknologi modern</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-md border border-gray-100 hover:shadow-lg transition cursor-pointer hover-scale">
+                    <h3 class="text-xl font-bold mb-2">Bimbingan Konseling</h3>
+                    <p class="text-gray-600">Pendampingan psikologis dan akademik</p>
+                </div>
+            </div>
+
+            <div class="bg-white p-8 rounded-xl shadow-md">
+                <h3 class="text-2xl font-bold mb-4">Ekstrakurikuler</h3>
+                <div class="grid md:grid-cols-3 gap-4">
+                    <div class="bg-gradient-to-r from-blue-50 to-purple-50 p-4 rounded-lg text-center font-medium hover-scale cursor-pointer">Pramuka</div>
+                    <div class="bg-gradient-to-r from-blue-50 to-purple-50 p-4 rounded-lg text-center font-medium hover-scale cursor-pointer">PMR</div>
+                    <div class="bg-gradient-to-r from-blue-50 to-purple-50 p-4 rounded-lg text-center font-medium hover-scale cursor-pointer">Paskibra</div>
+                    <div class="bg-gradient-to-r from-blue-50 to-purple-50 p-4 rounded-lg text-center font-medium hover-scale cursor-pointer">Basket</div>
+                    <div class="bg-gradient-to-r from-blue-50 to-purple-50 p-4 rounded-lg text-center font-medium hover-scale cursor-pointer">Futsal</div>
+                    <div class="bg-gradient-to-r from-blue-50 to-purple-50 p-4 rounded-lg text-center font-medium hover-scale cursor-pointer">Badminton</div>
+                    <div class="bg-gradient-to-r from-blue-50 to-purple-50 p-4 rounded-lg text-center font-medium hover-scale cursor-pointer">Musik</div>
+                    <div class="bg-gradient-to-r from-blue-50 to-purple-50 p-4 rounded-lg text-center font-medium hover-scale cursor-pointer">Tari</div>
+                    <div class="bg-gradient-to-r from-blue-50 to-purple-50 p-4 rounded-lg text-center font-medium hover-scale cursor-pointer">Teater</div>
+                    <div class="bg-gradient-to-r from-blue-50 to-purple-50 p-4 rounded-lg text-center font-medium hover-scale cursor-pointer">Robotika</div>
+                    <div class="bg-gradient-to-r from-blue-50 to-purple-50 p-4 rounded-lg text-center font-medium hover-scale cursor-pointer">English Club</div>
+                    <div class="bg-gradient-to-r from-blue-50 to-purple-50 p-4 rounded-lg text-center font-medium hover-scale cursor-pointer">Jurnalistik</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Prestasi -->
+        <div id="prestasi" class="section">
+            <h2 class="text-3xl font-bold mb-6">Prestasi Sekolah</h2>
+            <div class="grid gap-4">
+                <div class="bg-white p-6 rounded-xl shadow-md border-l-4 border-yellow-500 hover:shadow-lg transition cursor-pointer hover-scale">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <h3 class="text-xl font-bold mb-1">Juara 1 Olimpiade Matematika</h3>
+                            <p class="text-gray-600">Tingkat Provinsi</p>
+                        </div>
+                        <span class="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm font-semibold">2024</span>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-md border-l-4 border-yellow-500 hover:shadow-lg transition cursor-pointer hover-scale">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <h3 class="text-xl font-bold mb-1">Juara 2 Lomba Karya Ilmiah</h3>
+                            <p class="text-gray-600">Tingkat Nasional</p>
+                        </div>
+                        <span class="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm font-semibold">2024</span>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-md border-l-4 border-yellow-500 hover:shadow-lg transition cursor-pointer hover-scale">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <h3 class="text-xl font-bold mb-1">Juara 1 Basket Pelajar</h3>
+                            <p class="text-gray-600">Tingkat Kota</p>
+                        </div>
+                        <span class="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm font-semibold">2024</span>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-md border-l-4 border-yellow-500 hover:shadow-lg transition cursor-pointer hover-scale">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <h3 class="text-xl font-bold mb-1">Sekolah Adiwiyata</h3>
+                            <p class="text-gray-600">Tingkat Nasional</p>
+                        </div>
+                        <span class="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm font-semibold">2023</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Agenda -->
+        <div id="agenda" class="section">
+            <h2 class="text-3xl font-bold mb-6">Agenda Kegiatan</h2>
+            <div class="grid gap-4">
+                <div class="bg-white p-6 rounded-xl shadow-md hover:shadow-lg transition cursor-pointer hover-scale">
+                    <div class="flex items-start gap-4">
+                        <div class="bg-blue-100 px-4 py-2 rounded-lg text-center flex-shrink-0">
+                            <div class="text-2xl font-bold text-blue-600">15</div>
+                            <div class="text-sm text-blue-600">Jan</div>
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="text-lg font-bold mb-1">Ujian Tengah Semester</h3>
+                            <span class="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700">Akademik</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-md hover:shadow-lg transition cursor-pointer hover-scale">
+                    <div class="flex items-start gap-4">
+                        <div class="bg-blue-100 px-4 py-2 rounded-lg text-center flex-shrink-0">
+                            <div class="text-2xl font-bold text-blue-600">20</div>
+                            <div class="text-sm text-blue-600">Jan</div>
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="text-lg font-bold mb-1">Class Meeting</h3>
+                            <span class="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700">Kegiatan</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-md hover:shadow-lg transition cursor-pointer hover-scale">
+                    <div class="flex items-start gap-4">
+                        <div class="bg-blue-100 px-4 py-2 rounded-lg text-center flex-shrink-0">
+                            <div class="text-2xl font-bold text-blue-600">1</div>
+                            <div class="text-sm text-blue-600">Feb</div>
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="text-lg font-bold mb-1">Peringatan Isra Mi'raj</h3>
+                            <span class="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-purple-100 text-purple-700">Keagamaan</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-md hover:shadow-lg transition cursor-pointer hover-scale">
+                    <div class="flex items-start gap-4">
+                        <div class="bg-blue-100 px-4 py-2 rounded-lg text-center flex-shrink-0">
+                            <div class="text-2xl font-bold text-blue-600">10</div>
+                            <div class="text-sm text-blue-600">Feb</div>
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="text-lg font-bold mb-1">Penerimaan Raport</h3>
+                            <span class="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700">Akademik</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Kontak -->
+        <div id="kontak" class="section">
+            <h2 class="text-3xl font-bold mb-6">Hubungi Kami</h2>
+            
+            <div class="grid md:grid-cols-2 gap-6">
+                <div class="bg-white p-6 rounded-xl shadow-md space-y-4">
+                    <h3 class="text-xl font-bold mb-4">Informasi Kontak</h3>
+                    
+                    <div class="flex items-start gap-3 cursor-pointer hover:bg-gray-50 p-3 rounded-lg transition">
+                        <div class="text-blue-600 text-xl">📍</div>
+                        <div>
+                            <p class="font-semibold">Alamat</p>
+                            <p class="text-gray-600">Jl. Pendidikan No. 123, Lahat, Sumatera Selatan 31419</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-start gap-3 cursor-pointer hover:bg-gray-50 p-3 rounded-lg transition" onclick="window.location.href='tel:0731123456'">
+                        <div class="text-blue-600 text-xl">📞</div>
+                        <div>
+                            <p class="font-semibold">Telepon</p>
+                            <p class="text-gray-600">(0731) 123456</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-start gap-3 cursor-pointer hover:bg-gray-50 p-3 rounded-lg transition" onclick="window.location.href='mailto:info@sman1lahat.sch.id'">
+                        <div class="text-blue-600 text-xl">✉️</div>
+                        <div>
+                            <p class="font-semibold">Email</p>
+                            <p class="text-gray-600">info@sman1lahat.sch.id</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-start gap-3 cursor-pointer hover:bg-gray-50 p-3 rounded-lg transition">
+                        <div class="text-blue-600 text-xl">🕐</div>
+                        <div>
+                            <p class="font-semibold">Jam Operasional</p>
+                            <p class="text-gray-600">Senin - Jumat: 07.00 - 16.00 WIB</p>
+                            <p class="text-gray-600">Sabtu: 07.00 - 12.00 WIB</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-xl shadow-md">
+                    <h3 class="text-xl font-bold mb-4">Kirim Pesan</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Nama Lengkap</label>
+                            <input type="text" id="nama" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Email</label>
+                            <input type="email" id="email" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Pesan</label>
+                            <textarea id="pesan" rows="4" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"></textarea>
+                        </div>
+                        <button onclick="kirimPesan()" class="w-full bg-blue-600 text-white py-2 rounded-lg font-semibold hover:bg-blue-700 transition hover-scale">
+                            Kirim Pesan
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white mt-16">
+        <div class="max-w-7xl mx-auto px-4 py-8">
+            <div class="grid md:grid-cols-3 gap-8">
+                <div>
+                    <h3 class="text-lg font-bold mb-3">SMA Negeri 1 Lahat</h3>
+                    <p class="text-gray-400 text-sm">
+                        Sekolah unggulan yang berkomitmen mencetak generasi berprestasi dan berkarakter.
+                    </p>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold mb-3">Link Cepat</h3>
+                    <ul class="space-y-2 text-sm text-gray-400">
+                        <li class="cursor-pointer hover:text-white transition">Portal PPDB</li>
+                        <li class="cursor-pointer hover:text-white transition">E-Learning</li>
+                        <li class="cursor-pointer hover:text-white transition">Portal Siswa</li>
+                        <li class="cursor-pointer hover:text-white transition">Perpustakaan Digital</li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold mb-3">Media Sosial</h3>
+                    <div class="flex gap-3">
+                        <div class="w-10 h-10 bg-gray-700 rounded-lg flex items-center justify-center cursor-pointer hover:bg-blue-600 transition">FB</div>
+                        <div class="w-10 h-10 bg-gray-700 rounded-lg flex items-center justify-center cursor-pointer hover:bg-blue-400 transition">TW</div>
+                        <div class="w-10 h-10 bg-gray-700 rounded-lg flex items-center justify-center cursor-pointer hover:bg-pink-600 transition">IG</div>
+                        <div class="w-10 h-10 bg-gray-700 rounded-lg flex items-center justify-center cursor-pointer hover:bg-red-600 transition">YT</div>
+                    </div>
+                </div>
+            </div>
+            <div class="border-t border-gray-700 mt-8 pt-6 text-center text-sm text-gray-400">
+                © 2025 SMA Negeri 1 Lahat. All rights reserved.
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        const menuItems = [
+            { id: 'beranda', label: 'Beranda', icon: '🏠' },
+            { id: 'profil', label: 'Profil', icon: '👥' },
+            { id: 'program', label: 'Program', icon: '📚' },
+            { id: 'prestasi', label: 'Prestasi', icon: '🏆' },
+            { id: 'agenda', label: 'Agenda', icon: '📅' },
+            { id: 'kontak', label: 'Kontak', icon: '📞' }
+        ];
+
+        // Data Siswa
+        const dataSiswa = [
+            { nama: "Ahmad Rizki Pratama", nis: "2024001", kelas: "XII IPA 1", foto: "AR" },
+            { nama: "Siti Nurhaliza", nis: "2024002", kelas: "XII IPA 1", foto: "SN" },
+            { nama: "Budi Santoso", nis: "2024003", kelas: "XII IPA 2", foto: "BS" },
+            { nama: "Dewi Lestari", nis: "2024004", kelas: "XII IPS 1", foto: "DL" },
+            { nama: "Eko Prasetyo", nis: "2024005", kelas: "XII IPS 1", foto: "EP" },
+            { nama: "Fitri Amelia", nis: "2024006", kelas: "XII IPS 2", foto: "FA" },
+            { nama: "Gunawan Hidayat", nis: "2024007", kelas: "XI IPA 1", foto: "GH" },
+            { nama: "Hana Pertiwi", nis: "2024008", kelas: "XI IPA 1", foto: "HP" },
+            { nama: "Indra Kusuma", nis: "2024009", kelas: "XI IPA 2", foto: "IK" },
+            { nama: "Julia Rahmawati", nis: "2024010", kelas: "XI IPS 1", foto: "JR" },
+            { nama: "Kevin Wijaya", nis: "2024011", kelas: "XI IPS 2", foto: "KW" },
+            { nama: "Lina Marlina", nis: "2024012", kelas: "X IPA 1", foto: "LM" },
+            { nama: "Muhammad Faisal", nis: "2024013", kelas: "X IPA 1", foto: "MF" },
+            { nama: "Nurul Azizah", nis: "2024014", kelas: "X IPA 2", foto: "NA" },
+            { nama: "Oscar Ramadhan", nis: "2024015", kelas: "X IPS 1", foto: "OR" },
+            { nama: "Putri Handayani", nis: "2024016", kelas: "X IPS 2", foto: "PH" }
+        ];
+
+        // Data Prestasi dengan Siswa
+        const dataPrestasi = [
+            {
+                nama: "Ahmad Rizki Pratama",
+                nis: "2024001",
+                kelas: "XII IPA 1",
+                foto: "AR",
+                prestasi: "Juara 1 Olimpiade Matematika",
+                tingkat: "Provinsi",
+                tahun: "2024",
+                deskripsi: "Berhasil meraih medali emas dalam Olimpiade Matematika tingkat Provinsi Sumatera Selatan"
+            },
+            {
+                nama: "Siti Nurhaliza",
+                nis: "2024002",
+                kelas: "XII IPA 1",
+                foto: "SN",
+                prestasi: "Juara 2 Lomba Karya Ilmiah",
+                tingkat: "Nasional",
+                tahun: "2024",
+                deskripsi: "Juara 2 dalam Lomba Karya Ilmiah Remaja tingkat nasional dengan penelitian tentang energi terbarukan"
+            },
+            {
+                nama: "Kevin Wijaya",
+                nis: "2024011",
+                kelas: "XI IPS 2",
+                foto: "KW",
+                prestasi: "Juara 1 Basket Pelajar",
+                tingkat: "Kota",
+                tahun: "2024",
+                deskripsi: "Kapten tim basket yang membawa SMA Negeri 1 Lahat meraih juara 1 Basket Pelajar tingkat Kota Lahat"
+            },
+            {
+                nama: "Dewi Lestari",
+                nis: "2024004",
+                kelas: "XII IPS 1",
+                foto: "DL",
+                prestasi: "Juara 1 Pidato Bahasa Inggris",
+                tingkat: "Provinsi",
+                tahun: "2024",
+                deskripsi: "Juara 1 Lomba Pidato Bahasa Inggris tingkat Provinsi dengan tema Global Warming"
+            },
+            {
+                nama: "Indra Kusuma",
+                nis: "2024009",
+                kelas: "XI IPA 2",
+                foto: "IK",
+                prestasi: "Juara 3 Olimpiade Fisika",
+                tingkat: "Nasional",
+                tahun: "2024",
+                deskripsi: "Meraih medali perunggu dalam Olimpiade Sains Nasional bidang Fisika"
+            },
+            {
+                nama: "Julia Rahmawati",
+                nis: "2024010",
+                kelas: "XI IPS 1",
+                foto: "JR",
+                prestasi: "Juara 1 Lomba Menulis Cerpen",
+                tingkat: "Provinsi",
+                tahun: "2023",
+                deskripsi: "Juara 1 Lomba Menulis Cerpen tingkat Provinsi dengan tema Kehidupan Remaja"
+            }
+        ];
+
+        function initMenus() {
+            const desktopMenu = document.getElementById('desktopMenu');
+            const mobileMenu = document.getElementById('mobileMenu');
+
+            menuItems.forEach(item => {
+                const desktopBtn = document.createElement('button');
+                desktopBtn.textContent = item.label;
+                desktopBtn.className = 'px-4 py-2 rounded-lg font-medium transition text-gray-600 hover:bg-gray-100';
+                desktopBtn.onclick = () => changeSection(item.id);
+                desktopMenu.appendChild(desktopBtn);
+
+                const mobileBtn = document.createElement('button');
+                mobileBtn.innerHTML = `${item.icon} ${item.label}`;
+                mobileBtn.className = 'w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition text-gray-600 hover:bg-gray-100';
+                mobileBtn.onclick = () => {
+                    changeSection(item.id);
+                    toggleMobileMenu();
+                };
+                mobileMenu.appendChild(mobileBtn);
+            });
+
+            updateActiveMenu('beranda');
+        }
+
+        function changeSection(sectionId) {
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            document.getElementById(sectionId).classList.add('active');
+            updateActiveMenu(sectionId);
+            window.scrollTo(0, 0);
+        }
+
+        function updateActiveMenu(activeId) {
+            document.querySelectorAll('#desktopMenu button, #mobileMenu button').forEach(btn => {
+                if (btn.textContent.includes(menuItems.find(i => i.id === activeId)?.label)) {
+                    btn.classList.add('bg-blue-600', 'text-white');
+                    btn.classList.remove('text-gray-600', 'hover:bg-gray-100');
+                } else {
+                    btn.classList.remove('bg-blue-600', 'text-white');
+                    btn.classList.add('text-gray-600', 'hover:bg-gray-100');
+                }
+            });
+        }
+
+        function toggleMobileMenu() {
+            const mobileMenu = document.getElementById('mobileMenu');
+            mobileMenu.classList.toggle('hidden');
+        }
+
+        function openModal(modalId) {
+            const modal = document.getElementById(modalId);
+            modal.classList.add('show');
+            
+            if (modalId === 'modalSiswa') {
+                loadSiswa();
+            } else if (modalId === 'modalPrestasiDetail') {
+                loadPrestasi();
+            }
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('show');
+        }
+
+        function loadSiswa() {
+            const container = document.getElementById('daftarSiswaContainer');
+            container.innerHTML = '';
+            
+            dataSiswa.forEach(siswa => {
+                const colors = ['bg-blue-500', 'bg-green-500', 'bg-purple-500', 'bg-pink-500', 'bg-indigo-500', 'bg-red-500'];
+                const randomColor = colors[Math.floor(Math.random() * colors.length)];
+                
+                const siswaCard = document.createElement('div');
+                siswaCard.className = 'siswa-card bg-white p-4 rounded-lg border border-gray-200 hover:shadow-lg transition';
+                siswaCard.innerHTML = `
+                    <div class="flex items-center gap-4">
+                        <div class="${randomColor} w-16 h-16 rounded-full flex items-center justify-center text-white text-xl font-bold flex-shrink-0">
+                            ${siswa.foto}
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="font-bold text-lg">${siswa.nama}</h3>
+                            <p class="text-sm text-gray-600">NIS: ${siswa.nis}</p>
+                            <p class="text-sm text-blue-600 font-medium">${siswa.kelas}</p>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(siswaCard);
+            });
+        }
+
+        function filterSiswa() {
+            const searchValue = document.getElementById('searchSiswa').value.toLowerCase();
+            const siswaCards = document.querySelectorAll('.siswa-card');
+            
+            siswaCards.forEach(card => {
+                const nama = card.textContent.toLowerCase();
+                if (nama.includes(searchValue)) {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
+
+        function loadPrestasi() {
+            const container = document.getElementById('daftarPrestasiContainer');
+            container.innerHTML = '';
+            
+            dataPrestasi.forEach(item => {
+                const colors = ['bg-blue-500', 'bg-green-500', 'bg-purple-500', 'bg-pink-500', 'bg-indigo-500', 'bg-red-500'];
+                const randomColor = colors[Math.floor(Math.random() * colors.length)];
+                
+                const prestasiCard = document.createElement('div');
+                prestasiCard.className = 'bg-white p-6 rounded-xl border-l-4 border-yellow-500 hover:shadow-lg transition';
+                prestasiCard.innerHTML = `
+                    <div class="flex items-start gap-4">
+                        <div class="${randomColor} w-20 h-20 rounded-full flex items-center justify-center text-white text-2xl font-bold flex-shrink-0">
+                            ${item.foto}
+                        </div>
+                        <div class="flex-1">
+                            <div class="flex items-start justify-between mb-2">
+                                <div>
+                                    <h3 class="text-xl font-bold text-gray-800">${item.nama}</h3>
+                                    <p class="text-sm text-gray-600">NIS: ${item.nis} | Kelas: ${item.kelas}</p>
+                                </div>
+                                <span class="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm font-semibold">${item.tahun}</span>
+                            </div>
+                            <div class="bg-gradient-to-r from-yellow-50 to-orange-50 p-4 rounded-lg mt-3">
+                                <h4 class="font-bold text-lg text-gray-800 mb-1">🏆 ${item.prestasi}</h4>
+                                <p class="text-sm text-gray-600 mb-2">Tingkat ${item.tingkat}</p>
+                                <p class="text-sm text-gray-700">${item.deskripsi}</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(prestasiCard);
+            });
+        }
+
+        function submitPendaftaran() {
+            const nama = document.getElementById('daftarNama').value;
+            const email = document.getElementById('daftarEmail').value;
+            const telepon = document.getElementById('daftarTelepon').value;
+            const sekolah = document.getElementById('daftarSekolah').value;
+            
+            if (nama && email && telepon && sekolah) {
+                showNotification('✅', 'Pendaftaran Berhasil!', `Terima kasih ${nama}, data Anda telah kami terima.`);
+                closeModal('modalDaftar');
+                document.getElementById('daftarNama').value = '';
+                document.getElementById('daftarEmail').value = '';
+                document.getElementById('daftarTelepon').value = '';
+                document.getElementById('daftarSekolah').value = '';
+            } else {
+                showNotification('⚠️', 'Peringatan', 'Mohon lengkapi semua field!');
+            }
+        }
+
+        function kirimPesan() {
+            const nama = document.getElementById('nama').value;
+            const email = document.getElementById('email').value;
+            const pesan = document.getElementById('pesan').value;
+            
+            if (nama && email && pesan) {
+                showNotification('✅', 'Pesan Terkirim!', `Terima kasih ${nama}, pesan Anda akan segera kami balas.`);
+                document.getElementById('nama').value = '';
+                document.getElementById('email').value = '';
+                document.getElementById('pesan').value = '';
+            } else {
+                showNotification('⚠️', 'Peringatan', 'Mohon lengkapi semua field!');
+            }
+        }
+
+        function showNotification(icon, title, message) {
+            const notification = document.getElementById('notification');
+            document.getElementById('notifIcon').textContent = icon;
+            document.getElementById('notifTitle').textContent = title;
+            document.getElementById('notifMessage').textContent = message;
+            
+            notification.classList.add('show');
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 4000);
+        }
+
+        window.onclick = function(event) {
+            if (event.target.classList.contains('modal')) {
+                event.target.classList.remove('show');
+            }
+        }
+
+        initMenus();
+    </script>
+</body>
+</html>
